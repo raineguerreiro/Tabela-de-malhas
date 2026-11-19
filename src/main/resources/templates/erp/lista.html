@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Integracao ERP</title>
+    <meta charset="UTF-8"/>
+    <th:block th:replace="~{fragments/layout :: estilo}"></th:block>
+</head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar('erp')}"></div>
+<div class="main-area">
+    <div class="top-bar">Consultas de integracao com o ERP</div>
+    <div class="content">
+        <p><a class="btn btn-secondary" href="/erp/consultas/novo">+ Nova consulta</a></p>
+
+        <button type="button" class="btn btn-secondary" data-exportar-excel="#tabela-erp" data-arquivo="erp">Baixar como Excel</button>
+        <table id="tabela-erp">
+            <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Ativo</th>
+                <th>Ultima execucao</th>
+                <th data-exportar="nao">Acao</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="c : ${consultas}">
+                <td><a th:href="@{'/erp/consultas/' + ${c.id} + '/editar'}" th:text="${c.nome}"></a></td>
+                <td><span th:class="${c.ativo} ? 'badge-ativo' : 'badge-inativo'" th:text="${c.ativo} ? 'Ativo' : 'Inativo'"></span></td>
+                <td th:text="${c.ultimaExecucao}"></td>
+                <td>
+                    <form th:action="@{'/erp/consultas/' + ${c.id} + '/sincronizar'}" method="post" style="margin:0;">
+                        <button type="submit" class="btn btn-secondary">Sincronizar agora</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+
+        <p th:if="${mensagem}" th:text="${mensagem}"></p>
+    </div>
+</div>
+</body>
+</html>

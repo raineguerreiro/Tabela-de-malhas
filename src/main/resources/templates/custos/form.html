@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Lancar Custo</title>
+    <meta charset="UTF-8"/>
+    <th:block th:replace="~{fragments/layout :: estilo}"></th:block>
+</head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar('custos')}"></div>
+<div class="main-area">
+    <div class="top-bar">Lancar custo de servico</div>
+    <div class="content">
+        <form th:action="@{/custos/salvar}" method="post">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Malha</label>
+                    <select name="malhaId" required>
+                        <option th:each="m : ${malhas}" th:value="${m.id}" th:text="${m.codigo} + ' - ' + ${m.nome}"></option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Servico</label>
+                    <select name="servicoId" required>
+                        <option th:each="s : ${servicos}" th:value="${s.id}" th:text="${s.nome}"></option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Fornecedor</label>
+                    <select name="fornecedorId" required>
+                        <option th:each="f : ${fornecedores}" th:value="${f.id}" th:text="${f.nome}"></option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Valor unitario</label>
+                    <input type="number" step="0.0001" name="valorUnitario" required/>
+                </div>
+
+                <div class="form-group">
+                    <label>Quantidade</label>
+                    <input type="number" step="0.0001" name="quantidade" required/>
+                </div>
+
+                <div class="form-group">
+                    <label>Unidade de medida</label>
+                    <input type="text" name="unidadeMedida" placeholder="kg, m, un"/>
+                </div>
+
+                <div class="form-group">
+                    <label>Data de referencia</label>
+                    <input type="date" name="dataReferencia"/>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Salvar</button>
+            </div>
+        </form>
+
+        <h2>Ultimos lancamentos</h2>
+        <button type="button" class="btn btn-secondary" data-exportar-excel="#tabela-custos" data-arquivo="custos">Baixar como Excel</button>
+        <table id="tabela-custos">
+            <thead>
+            <tr>
+                <th>Malha</th>
+                <th>Servico</th>
+                <th>Fornecedor</th>
+                <th>Valor unitario</th>
+                <th>Quantidade</th>
+                <th>Total</th>
+                <th>Origem</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="c : ${custos}">
+                <td th:text="${c.malha.codigo}"></td>
+                <td th:text="${c.servico.nome}"></td>
+                <td th:text="${c.fornecedor.nome}"></td>
+                <td class="text-right" th:text="${c.valorUnitario}" th:attr="data-valor=${c.valorUnitario}"></td>
+                <td class="text-right" th:text="${c.quantidade}" th:attr="data-valor=${c.quantidade}"></td>
+                <td class="text-right" th:attr="data-valor=${c.valorTotal}"><span class="com-formula" th:title="${c.memoriaValorTotal}" th:text="${c.valorTotal}"></span></td>
+                <td><span th:class="${c.origem.name() == 'MANUAL'} ? 'badge-pill badge-manual' : 'badge-pill badge-erpsync'" th:text="${c.origem}"></span></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

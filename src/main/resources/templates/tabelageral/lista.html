@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Tabela Geral</title>
+    <meta charset="UTF-8"/>
+    <th:block th:replace="~{fragments/layout :: estilo}"></th:block>
+    <style>
+        #colunas-menu { position: relative; display: inline-block; margin: 1rem 0; }
+        #colunas-botao { padding: 0.4rem 0.8rem; cursor: pointer; }
+        #colunas-painel {
+            position: absolute; top: 100%; left: 0; z-index: 10; margin-top: 0.25rem;
+            background: #fff; border: 1px solid #ccc; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            padding: 0.6rem; min-width: 260px; max-height: 60vh; overflow-y: auto;
+        }
+        #colunas-painel[hidden] { display: none; }
+        #colunas-painel label { font-weight: normal; display: flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0; white-space: nowrap; }
+        #colunas-painel hr { margin: 0.5rem 0; border: none; border-top: 1px solid #ddd; }
+        #mostrar-todas { width: 100%; }
+
+        table.oculta-col-0 th:nth-child(1), table.oculta-col-0 td:nth-child(1) { display: none; }
+        table.oculta-col-1 th:nth-child(2), table.oculta-col-1 td:nth-child(2) { display: none; }
+        table.oculta-col-2 th:nth-child(3), table.oculta-col-2 td:nth-child(3) { display: none; }
+        table.oculta-col-3 th:nth-child(4), table.oculta-col-3 td:nth-child(4) { display: none; }
+        table.oculta-col-4 th:nth-child(5), table.oculta-col-4 td:nth-child(5) { display: none; }
+        table.oculta-col-5 th:nth-child(6), table.oculta-col-5 td:nth-child(6) { display: none; }
+        table.oculta-col-6 th:nth-child(7), table.oculta-col-6 td:nth-child(7) { display: none; }
+        table.oculta-col-7 th:nth-child(8), table.oculta-col-7 td:nth-child(8) { display: none; }
+        table.oculta-col-8 th:nth-child(9), table.oculta-col-8 td:nth-child(9) { display: none; }
+        table.oculta-col-9 th:nth-child(10), table.oculta-col-9 td:nth-child(10) { display: none; }
+        table.oculta-col-10 th:nth-child(11), table.oculta-col-10 td:nth-child(11) { display: none; }
+        table.oculta-col-11 th:nth-child(12), table.oculta-col-11 td:nth-child(12) { display: none; }
+        table.oculta-col-12 th:nth-child(13), table.oculta-col-12 td:nth-child(13) { display: none; }
+        table.oculta-col-13 th:nth-child(14), table.oculta-col-13 td:nth-child(14) { display: none; }
+        table.oculta-col-14 th:nth-child(15), table.oculta-col-14 td:nth-child(15) { display: none; }
+        table.oculta-col-15 th:nth-child(16), table.oculta-col-15 td:nth-child(16) { display: none; }
+        table.oculta-col-16 th:nth-child(17), table.oculta-col-16 td:nth-child(17) { display: none; }
+        table.oculta-col-17 th:nth-child(18), table.oculta-col-17 td:nth-child(18) { display: none; }
+        table.oculta-col-18 th:nth-child(19), table.oculta-col-18 td:nth-child(19) { display: none; }
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar('tabelageral')}"></div>
+<div class="main-area">
+    <div class="top-bar">Tabela Geral</div>
+    <div class="content">
+    <p>Ficha tecnica de malhas importada de <code>import/TABELA GERAL .xls</code>, exatamente como na planilha.</p>
+
+    <form th:action="@{/tabela-geral/reimportar}" method="post" style="margin-bottom:12px;"
+            onsubmit="return confirm('Isso substitui os dados brutos da Tabela Geral pelo conteudo atual da planilha. Fios, Malhas e Custos cadastrados na mao NAO sao afetados. Continuar?');">
+        <button type="submit" class="btn btn-secondary">Reimportar da planilha</button>
+        <button type="button" class="btn btn-secondary" data-exportar-excel="#tabela-geral" data-arquivo="tabela-geral">Baixar como Excel</button>
+    </form>
+
+    <div id="colunas-menu">
+        <button type="button" id="colunas-botao" class="btn btn-secondary" aria-haspopup="true" aria-expanded="false">Colunas &#9662;</button>
+    <div id="colunas-painel" hidden>
+        <label><input type="checkbox" data-col="0" checked/> Malha</label>
+        <label><input type="checkbox" data-col="1" checked/> Codigo</label>
+        <label><input type="checkbox" data-col="2" checked/> Rendimento</label>
+        <label><input type="checkbox" data-col="3" checked/> Tear (Finura/Diametro/Agulhas)</label>
+        <label><input type="checkbox" data-col="4" checked/> Composicao da Malha</label>
+        <label><input type="checkbox" data-col="5" checked/> Participacao de Cada Fio</label>
+        <label><input type="checkbox" data-col="6" checked/> Fio</label>
+        <label><input type="checkbox" data-col="7" checked/> LFA</label>
+        <label><input type="checkbox" data-col="8" checked/> Tamanho do Ponto</label>
+        <label><input type="checkbox" data-col="9" checked/> Fator Cobertura</label>
+        <label><input type="checkbox" data-col="10" checked/> Fluxo</label>
+        <label><input type="checkbox" data-col="11" checked/> Largura Final Acabado (cm)</label>
+        <label><input type="checkbox" data-col="12" checked/> Largura Para Encaixe (cm)</label>
+        <label><input type="checkbox" data-col="13" checked/> Gramatura Padrao (g/m2)</label>
+        <label><input type="checkbox" data-col="14" checked/> Gramatura Limites (g/m2)</label>
+        <label><input type="checkbox" data-col="15" checked/> Encolhimento Secadora - C</label>
+        <label><input type="checkbox" data-col="16" checked/> Encolhimento Secadora - L</label>
+        <label><input type="checkbox" data-col="17" checked/> Encolhimento Varal - C</label>
+        <label><input type="checkbox" data-col="18" checked/> Encolhimento Varal - L</label>
+        <hr/>
+        <button type="button" id="mostrar-todas" class="btn btn-secondary">Mostrar todas</button>
+    </div>
+    </div>
+
+    <div style="overflow-x:auto;">
+<table id="tabela-geral">
+    <thead>
+    <tr>
+        <th>Malha</th>
+        <th>Codigo</th>
+        <th>Rendimento</th>
+        <th>Tear (Finura/Diametro/Agulhas)</th>
+        <th>Composicao da Malha</th>
+        <th>Participacao de Cada Fio</th>
+        <th>Fio</th>
+        <th>LFA</th>
+        <th>Tamanho do Ponto</th>
+        <th>Fator Cobertura</th>
+        <th>Fluxo</th>
+        <th>Largura Final Acabado (cm)</th>
+        <th>Largura Para Encaixe (cm)</th>
+        <th>Gramatura Padrao (g/m2)</th>
+        <th>Gramatura Limites (g/m2)</th>
+        <th>Encolhimento Secadora - C</th>
+        <th>Encolhimento Secadora - L</th>
+        <th>Encolhimento Varal - C</th>
+        <th>Encolhimento Varal - L</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="linha : ${linhas}"
+            th:classappend="${linha.item.tituloSecao ? 'titulo-secao' : ((linha.grupo % 2 == 0 ? 'bloco-par' : 'bloco-impar') + (linha.inicioDeGrupo ? ' bloco-divisor' : ''))}">
+        <th:block th:if="${linha.item.tituloSecao}">
+            <td colspan="19" th:text="${linha.item.textoTituloSecao}"></td>
+        </th:block>
+        <th:block th:unless="${linha.item.tituloSecao}">
+            <td th:text="${linha.item.malha}"></td>
+            <td th:text="${linha.item.codigo}"></td>
+            <td th:text="${linha.item.rendimento}"></td>
+            <td th:text="${linha.item.tearFinuraDiametroAgulhas}"></td>
+            <td th:text="${linha.item.composicaoDaMalha}"></td>
+            <td th:text="${linha.item.participacaoDeCadaFio}"></td>
+            <td th:text="${linha.item.fio}"></td>
+            <td th:text="${linha.item.lfa}"></td>
+            <td th:text="${linha.item.tamanhoDoPonto}"></td>
+            <td th:text="${linha.item.fatorCobertura}"></td>
+            <td th:text="${linha.item.fluxo}"></td>
+            <td th:text="${linha.item.larguraFinalAcabado}"></td>
+            <td th:text="${linha.item.larguraParaEncaixe}"></td>
+            <td th:text="${linha.item.gramaturaPadrao}"></td>
+            <td th:text="${linha.item.gramaturaLimites}"></td>
+            <td th:text="${linha.item.encolhimentoSecadoraC}"></td>
+            <td th:text="${linha.item.encolhimentoSecadoraL}"></td>
+            <td th:text="${linha.item.encolhimentoVaralC}"></td>
+            <td th:text="${linha.item.encolhimentoVaralL}"></td>
+        </th:block>
+    </tr>
+    </tbody>
+</table>
+    </div>
+    </div>
+</div>
+
+<script th:inline="none">
+    (function () {
+        var CHAVE = 'tabelaGeral.colunasOcultas';
+        var tabela = document.getElementById('tabela-geral');
+        var checkboxes = document.querySelectorAll('#colunas-painel input[type="checkbox"]');
+        var botao = document.getElementById('colunas-botao');
+        var painel = document.getElementById('colunas-painel');
+
+        botao.addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            var aberto = !painel.hidden;
+            painel.hidden = aberto;
+            botao.setAttribute('aria-expanded', String(!aberto));
+        });
+
+        document.addEventListener('click', function (ev) {
+            if (!painel.hidden && !painel.contains(ev.target) && ev.target !== botao) {
+                painel.hidden = true;
+                botao.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        function lerOcultas() {
+            try {
+                var salvo = localStorage.getItem(CHAVE);
+                return salvo ? JSON.parse(salvo) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function salvarOcultas(ocultas) {
+            try {
+                localStorage.setItem(CHAVE, JSON.stringify(ocultas));
+            } catch (e) {
+                // localStorage indisponivel (ex. navegacao privada) - segue sem persistir
+            }
+        }
+
+        function aplicarClasse(col, oculta) {
+            tabela.classList.toggle('oculta-col-' + col, oculta);
+        }
+
+        var ocultas = lerOcultas();
+        checkboxes.forEach(function (cb) {
+            var col = cb.getAttribute('data-col');
+            var oculta = ocultas.indexOf(col) !== -1;
+            cb.checked = !oculta;
+            aplicarClasse(col, oculta);
+        });
+
+        checkboxes.forEach(function (cb) {
+            cb.addEventListener('change', function () {
+                var col = cb.getAttribute('data-col');
+                aplicarClasse(col, !cb.checked);
+                var atuais = lerOcultas().filter(function (c) { return c !== col; });
+                if (!cb.checked) {
+                    atuais.push(col);
+                }
+                salvarOcultas(atuais);
+            });
+        });
+
+        document.getElementById('mostrar-todas').addEventListener('click', function () {
+            checkboxes.forEach(function (cb) {
+                cb.checked = true;
+                aplicarClasse(cb.getAttribute('data-col'), false);
+            });
+            salvarOcultas([]);
+        });
+    })();
+</script>
+</body>
+</html>

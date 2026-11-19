@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Consulta ERP</title>
+    <meta charset="UTF-8"/>
+    <th:block th:replace="~{fragments/layout :: estilo}"></th:block>
+</head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar('erp')}"></div>
+<div class="main-area">
+    <div class="top-bar" th:text="${config.id} != null ? 'Editar consulta' : 'Nova consulta'"></div>
+    <div class="content">
+        <form th:action="@{/erp/consultas/salvar}" th:object="${config}" method="post">
+            <input type="hidden" th:field="*{id}"/>
+
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label>Nome</label>
+                    <input type="text" th:field="*{nome}" required/>
+                </div>
+
+                <div class="form-group full-width">
+                    <label>Consulta SQL (executada no banco do ERP)</label>
+                    <textarea th:field="*{sqlConsulta}" rows="6" placeholder="SELECT ... FROM tabela_do_erp" required></textarea>
+                </div>
+
+                <p class="form-group full-width" style="margin:0;">Nome das colunas retornadas pela consulta que correspondem a cada campo:</p>
+
+                <div class="form-group">
+                    <label>Coluna do codigo da malha</label>
+                    <input type="text" th:field="*{colunaMalhaCodigo}" required/>
+                </div>
+
+                <div class="form-group">
+                    <label>Coluna do nome do servico</label>
+                    <input type="text" th:field="*{colunaServicoNome}" required/>
+                </div>
+
+                <div class="form-group">
+                    <label>Coluna do nome do fornecedor</label>
+                    <input type="text" th:field="*{colunaFornecedorNome}" required/>
+                </div>
+
+                <div class="form-group">
+                    <label>Coluna do valor unitario</label>
+                    <input type="text" th:field="*{colunaValorUnitario}" required/>
+                </div>
+
+                <div class="form-group">
+                    <label>Coluna da quantidade (opcional)</label>
+                    <input type="text" th:field="*{colunaQuantidade}"/>
+                </div>
+
+                <div class="form-group">
+                    <label>Coluna da unidade de medida (opcional)</label>
+                    <input type="text" th:field="*{colunaUnidadeMedida}"/>
+                </div>
+
+                <div class="form-group">
+                    <label>Coluna da data de referencia (opcional)</label>
+                    <input type="text" th:field="*{colunaDataReferencia}"/>
+                </div>
+
+                <div class="form-group full-width">
+                    <label class="checkbox-label"><input type="checkbox" th:field="*{ativo}" style="width:auto;"/> Ativo</label>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Fornecedores</title>
+    <meta charset="UTF-8"/>
+    <th:block th:replace="~{fragments/layout :: estilo}"></th:block>
+</head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar('fornecedores')}"></div>
+<div class="main-area">
+    <div class="top-bar">Fornecedores</div>
+    <div class="content">
+        <p><a class="btn btn-secondary" href="/fornecedores/novo">+ Novo fornecedor</a></p>
+
+        <button type="button" class="btn btn-secondary" data-exportar-excel="#tabela-fornecedores" data-arquivo="fornecedores">Baixar como Excel</button>
+        <table id="tabela-fornecedores">
+            <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Ativo</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="f : ${fornecedores}">
+                <td><a th:href="@{'/fornecedores/' + ${f.id} + '/editar'}" th:text="${f.nome}"></a></td>
+                <td><span th:class="${f.ativo} ? 'badge-ativo' : 'badge-inativo'" th:text="${f.ativo} ? 'Ativo' : 'Inativo'"></span></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

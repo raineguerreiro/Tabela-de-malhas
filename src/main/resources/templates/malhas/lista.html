@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Malhas</title>
+    <meta charset="UTF-8"/>
+    <th:block th:replace="~{fragments/layout :: estilo}"></th:block>
+    <style>
+        .codigo-fio-grupo { display: flex; gap: 8px; align-items: flex-end; }
+        .codigo-fio-grupo input { text-align: center; font-variant-numeric: tabular-nums; }
+        .codigo-fio-grupo .form-group { flex: none; }
+
+        /* Tabela de Rotativos mais compacta: largura por conteudo, linhas mais baixas. */
+        #aba-rotativos table { width: auto; }
+        #aba-rotativos th, #aba-rotativos td { padding: 2px 6px; white-space: nowrap; }
+        #aba-rotativos td form { margin: 0; }
+        #aba-rotativos select, #aba-rotativos input[type=text], #aba-rotativos input[type=number] {
+            font-size: 11px;
+            font-family: 'DM Sans', sans-serif;
+            padding: 1px 4px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--bg-main);
+            width: auto;
+        }
+
+        /* Um bloco por tabela de precos (Tingimentos e Rotativos). */
+        .grupo-tabela { margin-bottom: 24px; }
+        .grupo-tabela-titulo { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 0 0 8px; font-size: 15px; }
+        .grupo-tabela-qtd { font-size: 12px; font-weight: normal; color: var(--text-muted); }
+
+        /* Preco da Malha calculado pela regra da tecnica (aba Rotativos). */
+        .preco-aviso { color: var(--danger); font-weight: 600; font-size: 11px; cursor: help; }
+        .preco-pendente { color: var(--text-muted); font-size: 11px; cursor: help; }
+
+        /* Sub-aba Regras de preco: um cartao por tecnica. */
+        .regras-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+        .regra-cartao { border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: var(--radius-sm); padding: 12px 16px; background: var(--bg-main); }
+        .regra-cartao.regra-pendente { border-left-color: var(--border); }
+        .regra-cartao p { margin: 0 0 8px; }
+        .regra-rotulo { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px !important; }
+        .regra-formula { font-family: monospace; background: var(--accent-light); padding: 4px 8px; border-radius: var(--radius-sm); }
+        .regra-passos { margin: 0 0 8px; padding-left: 20px; }
+        .regra-cenario + .regra-cenario { border-top: 1px dashed var(--border); margin-top: 12px; padding-top: 12px; }
+        .regra-cenario-titulo { font-weight: 600; color: var(--accent-hover); }
+
+        /* Cabecalhos clicaveis para ordenar a tabela de Rotativos. */
+        table.ordenavel th { cursor: pointer; user-select: none; }
+        table.ordenavel th::after { content: ' \2195'; color: var(--text-muted); font-size: 10px; }
+        table.ordenavel th[data-ordem=asc]::after { content: ' \25B2'; color: inherit; }
+        table.ordenavel th[data-ordem=desc]::after { content: ' \25BC'; color: inherit; }
+        table.ordenavel th[data-nivel][data-ordem=asc]::after { content: ' \25B2' attr(data-nivel); }
+        table.ordenavel th[data-nivel][data-ordem=desc]::after { content: ' \25BC' attr(data-nivel); }
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar('malhas')}"></div>
+<div class="main-area">
+    <div class="top-bar">Malhas</div>
+    <div class="content">
+        <div style="margin-bottom:16px; display:flex; gap:8px;">
+            <button type="button" id="aba-btn-tingimentos" class="btn-toggle">Tingimentos</button>
+            <button type="button" id="aba-btn-rotativos" class="btn-toggle">Rotativos</button>
+            <button type="button" id="aba-btn-malhas" class="btn-toggle">Malhas</button>
+            <button type="button" id="aba-btn-fios" class="btn-toggle">Fios</button>
+            <button type="button" id="aba-btn-tecelagem" class="btn-toggle">Tecelagem</button>
+        </div>
+
+        <div id="aba-tingimentos">
+            <p>Custo de tingimento por referencia, tamanho e cor. Os valores vem hoje de upload
+                manual de planilha .xlsx ou .csv (colunas: Referencia, Tamanho, Cor, Descricao, Nomecor,
+                Preco, Tabela - a tabela de precos ja vem dentro do proprio arquivo, um upload pode
+                trazer varias tabelas); futuramente virao direto do ERP. Reenviar a mesma planilha
+                atualiza os precos existentes em vez de duplicar linhas.</p>
+
+            <p><a class="btn btn-secondary" th:href="@{/malhas/exportar(aba='tingimentos', tabela=${tabelaSelecionada})}">Baixar como Excel</a></p>
+
+            <form method="post" enctype="multipart/form-data" th:action="@{/malhas/tingimentos/importar}"
+                    style="display:flex; gap:8px; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap;">
+                <div class="form-group">
+                    <label for="tingimento-arquivo">Planilha (.xlsx ou .csv)</label>
+                    <input type="file" id="tingimento-arquivo" name="arquivo" accept=".xlsx,.csv" required/>
+                </div>
+                <button type="submit" class="btn btn-primary">Importar planilha</button>
+            </form>
+
+            <div style="margin-bottom:16px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <span>Filtrar por tabela:</span>
+                <a th:href="@{/malhas(aba='tingimentos')}" class="btn-toggle"
+                        th:classappend="${tabelaSelecionada == null or #strings.isEmpty(tabelaSelecionada)} ? ' ativo' : ''">Todas</a>
+                <a th:each="t : ${tabelasDisponiveis}" th:href="@{/malhas(aba='tingimentos', tabela=${t})}"
+                        th:text="${t}" class="btn-toggle" th:classappend="${t == tabelaSelecionada} ? ' ativo' : ''"></a>
+            </div>
+
+            <p th:if="${#maps.isEmpty(tingimentosPorTabela)}" style="color:var(--text-muted);">Nenhum tingimento cadastrado ainda.</p>
+
+            <div th:each="grupo : ${tingimentosPorTabela}" class="grupo-tabela">
+            <h3 class="grupo-tabela-titulo">
+                <span th:text="${grupo.key}"></span>
+                <span class="grupo-tabela-qtd" th:text="${#lists.size(grupo.value)} + ' linha(s)'"></span>
+            </h3>
+            <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                <tr>
+                    <th>Referencia</th>
+                    <th>Tamanho</th>
+                    <th>Cor</th>
+                    <th>Descricao</th>
+                    <th>Nomecor</th>
+                    <th>Preco</th>
+                    <th>Tabela</th>
+                    <th>Preco da Malha (Informado e Contratipo)</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="ting : ${grupo.value}">
+                    <td th:text="${ting.referencia}"></td>
+                    <td th:text="${ting.tamanho}"></td>
+                    <td th:text="${ting.corCodigo}"></td>
+                    <td th:text="${ting.descricao}"></td>
+                    <td th:text="${ting.corNome}"></td>
+                    <td class="text-right">
+                        <span th:if="${ting.preco != null}" th:text="'R$ ' + ${#numbers.formatDecimal(ting.preco, 1, 'POINT', 2, 'COMMA')}"></span>
+                        <span th:if="${ting.preco == null}" style="color:var(--text-muted);">-</span>
+                    </td>
+                    <td th:text="${ting.tabela}"></td>
+                    <td class="text-right"
+                            th:with="precoMalha=${precoMalhaInformadoContratipoPorTingimento.get(ting.id)}">
+                        <span class="com-formula" th:title="${memoriaPrecoMalhaPorTingimento.get(ting.id)}"
+                                th:text="'R$ ' + ${#numbers.formatDecimal(precoMalha != null ? precoMalha : 0, 1, 'POINT', 2, 'COMMA')}"></span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            </div>
+            </div>
+        </div>
+
+        <div id="aba-rotativos">
+            <div style="margin-bottom:16px; display:flex; gap:8px;">
+                <button type="button" id="subaba-btn-rotativos-tabela" class="btn-toggle">Tabela</button>
+                <button type="button" id="subaba-btn-rotativos-banco" class="btn-toggle">Banco de dados</button>
+                <button type="button" id="subaba-btn-rotativos-regras" class="btn-toggle">Regras de preço</button>
+            </div>
+
+            <div id="subaba-rotativos-tabela">
+            <p>Custo de rotativo por referencia, tamanho e cor. Os valores vem hoje de upload
+                manual de planilha .xlsx ou .csv (colunas: Referencia, Tamanho, Cor, Descricao, Nomecor,
+                Preco, Tabela - a tabela de precos ja vem dentro do proprio arquivo, um upload pode
+                trazer varias tabelas); futuramente virao direto do ERP. Reenviar a mesma planilha
+                atualiza os precos existentes em vez de duplicar linhas.</p>
+
+            <p><button type="button" class="btn btn-secondary" data-exportar-excel="#subaba-rotativos-tabela table" data-arquivo="rotativos">Baixar como Excel</button></p>
+
+            <form method="post" enctype="multipart/form-data" th:action="@{/malhas/rotativos/importar}"
+                    style="display:flex; gap:8px; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap;">
+                <div class="form-group">
+                    <label for="rotativo-arquivo">Planilha (.xlsx ou .csv)</label>
+                    <input type="file" id="rotativo-arquivo" name="arquivo" accept=".xlsx,.csv" required/>
+                </div>
+                <button type="submit" class="btn btn-primary">Importar planilha</button>
+            </form>
+
+            <div style="margin-bottom:16px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <span>Filtrar por tabela:</span>
+                <a th:href="@{/malhas(aba='rotativos')}" class="btn-toggle"
+                        th:classappend="${tabelaRotativoSelecionada == null or #strings.isEmpty(tabelaRotativoSelecionada)} ? ' ativo' : ''">Todas</a>
+                <a th:each="t : ${tabelasDisponiveisRotativos}" th:href="@{/malhas(aba='rotativos', tabelaRotativo=${t})}"
+                        th:text="${t}" class="btn-toggle" th:classappend="${t == tabelaRotativoSelecionada} ? ' ativo' : ''"></a>
+            </div>
+
+            <p style="color:var(--text-muted);">Clique no titulo de uma coluna para ordenar;
+                <strong>Shift+clique</strong> em outras colunas para adicionar niveis de ordenacao (como no
+                Classificar do Excel). Cada tabela de precos ordena separadamente.</p>
+
+            <p th:if="${#maps.isEmpty(rotativosPorTabela)}" style="color:var(--text-muted);">Nenhum rotativo cadastrado ainda.</p>
+
+            <div th:each="grupo, grupoStat : ${rotativosPorTabela}" class="grupo-tabela">
+            <h3 class="grupo-tabela-titulo">
+                <span th:text="${grupo.key}"></span>
+                <span class="grupo-tabela-qtd" th:text="${#lists.size(grupo.value)} + ' linha(s)'"></span>
+                <button type="button" class="btn btn-secondary" th:attr="data-limpar-ordem='tabela-rotativos-' + ${grupoStat.index}">Limpar ordenacao</button>
+            </h3>
+            <div style="overflow-x:auto;">
+            <table th:id="'tabela-rotativos-' + ${grupoStat.index}" class="ordenavel"
+                    th:attr="data-chave='rotativos-' + ${grupo.key}">
+                <thead>
+                <tr>
+                    <th>Referencia</th>
+                    <th>Tamanho</th>
+                    <th>Cor</th>
+                    <th>Descricao</th>
+                    <th>Nomecor</th>
+                    <th>Preco</th>
+                    <th>Tabela</th>
+                    <th>Tecnica</th>
+                    <th>Tecido Base</th>
+                    <th>Preco da Malha (Informado e Contratipo)</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="rot : ${grupo.value}">
+                    <td th:text="${rot.referencia}"></td>
+                    <td th:text="${rot.tamanho}"></td>
+                    <td th:text="${rot.corCodigo}"></td>
+                    <td th:text="${rot.descricao}"></td>
+                    <td th:text="${rot.corNome}"></td>
+                    <td class="text-right">
+                        <span th:if="${rot.preco != null}" th:text="'R$ ' + ${#numbers.formatDecimal(rot.preco, 1, 'POINT', 2, 'COMMA')}"></span>
+                        <span th:if="${rot.preco == null}" style="color:var(--text-muted);">-</span>
+                    </td>
+                    <td th:text="${rot.tabela}"></td>
+                    <td>
+                        <form method="post" th:action="@{'/malhas/rotativos/' + ${rot.id} + '/tecnica'}">
+                            <input type="hidden" name="tabelaRotativo" th:value="${tabelaRotativoSelecionada}"/>
+                            <select name="tecnica" onchange="this.form.submit()">
+                                <option value="" th:selected="${rot.tecnica == null}">-</option>
+                                <option value="CILINDRO" th:selected="${rot.tecnica == 'CILINDRO'}">CILINDRO</option>
+                                <option value="DIGITAL" th:selected="${rot.tecnica == 'DIGITAL'}">DIGITAL</option>
+                                <option value="SUBLIMAÇÃO" th:selected="${rot.tecnica == 'SUBLIMAÇÃO'}">SUBLIMAÇÃO</option>
+                                <option value="ROT. QUADRO" th:selected="${rot.tecnica == 'ROT. QUADRO'}">ROT. QUADRO</option>
+                            </select>
+                        </form>
+                    </td>
+                    <td>
+                        <form method="post" th:action="@{'/malhas/rotativos/' + ${rot.id} + '/tecido-base'}">
+                            <input type="hidden" name="tabelaRotativo" th:value="${tabelaRotativoSelecionada}"/>
+                            <input type="text" name="tecidoBase" th:value="${rot.tecidoBase}" onchange="this.form.submit()"/>
+                        </form>
+                    </td>
+                    <td class="text-right" th:with="calc=${precoRotativoPorRegra.get(rot.id)}"
+                            th:title="${calc != null} ? ${calc.memoria} : null">
+                        <th:block th:if="${calc != null}" th:switch="${calc.situacao.name()}">
+                            <span th:case="'CALCULADO'" class="com-formula"
+                                    th:text="'R$ ' + ${#numbers.formatDecimal(calc.valor, 1, 'POINT', 2, 'COMMA')}"></span>
+                            <span th:case="'SEM_PRECO_BASE'" class="preco-aviso">sem preço base</span>
+                            <span th:case="'SEM_TINGIMENTO'" class="preco-aviso">sem tingimento</span>
+                            <span th:case="'FORA_DA_REGRA'" class="preco-aviso">fora da regra</span>
+                            <span th:case="'REGRA_A_DEFINIR'" class="preco-pendente">regra a definir</span>
+                            <span th:case="*" class="preco-pendente">sem técnica</span>
+                        </th:block>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            </div>
+            </div>
+            </div>
+
+            <div id="subaba-rotativos-banco">
+            <p>Preco base de cada tecido, uma linha por combinacao unica de Referencia + Tamanho + Tecido Base
+                vinda da tabela de rotativos (todas as tabelas de precos; rotativos sem Tecido Base ficam de fora,
+                assim como referencias que ja constam em alguma tabela da aba Tingimentos).
+                Preco e digitado aqui; Preco Contratipo e sempre calculado (Preco &times; 0,9175).</p>
+
+            <p style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; color:var(--text-muted);">
+                <span>Clique no titulo de uma coluna para ordenar; <strong>Shift+clique</strong> em outras colunas
+                    para adicionar niveis de ordenacao (como no Classificar do Excel).</span>
+                <button type="button" class="btn btn-secondary" data-limpar-ordem="tabela-banco-dados-rotativos">Limpar ordenacao</button>
+                <button type="button" class="btn btn-secondary" data-exportar-excel="#tabela-banco-dados-rotativos" data-arquivo="banco-de-dados-rotativos">Baixar como Excel</button>
+            </p>
+
+            <div style="overflow-x:auto;">
+            <table id="tabela-banco-dados-rotativos" class="ordenavel">
+                <thead>
+                <tr>
+                    <th>Referencia</th>
+                    <th>Tamanho</th>
+                    <th>Tecido Base</th>
+                    <th>Preco</th>
+                    <th>Preco Contratipo</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="linha : ${bancoDadosRotativos}">
+                    <td th:text="${linha.referencia}"></td>
+                    <td th:text="${linha.tamanho}"></td>
+                    <td th:text="${linha.tecidoBase}"></td>
+                    <td class="text-right">
+                        <form method="post" th:action="@{/malhas/rotativos/banco-dados/salvar}"
+                                style="display:flex; align-items:center; gap:4px; justify-content:flex-end;">
+                            <input type="hidden" name="referencia" th:value="${linha.referencia}"/>
+                            <input type="hidden" name="tamanho" th:value="${linha.tamanho}"/>
+                            <input type="hidden" name="tecidoBase" th:value="${linha.tecidoBase}"/>
+                            <input type="hidden" name="tabelaRotativo" th:value="${tabelaRotativoSelecionada}"/>
+                            <span>R$</span>
+                            <input type="number" step="0.0001" name="preco" style="width:8em;" th:value="${linha.preco}"
+                                    onchange="this.form.submit()"/>
+                        </form>
+                    </td>
+                    <td class="text-right">
+                        <span th:if="${linha.precoContratipo != null}" class="com-formula" th:title="${linha.memoriaPrecoContratipo}"
+                                th:text="'R$ ' + ${#numbers.formatDecimal(linha.precoContratipo, 1, 'POINT', 2, 'COMMA')}"></span>
+                        <span th:if="${linha.precoContratipo == null}" style="color:var(--text-muted);">-</span>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(bancoDadosRotativos)}">
+                    <td colspan="5" style="color:var(--text-muted);">Nenhum rotativo com Tecido Base preenchido fora das tabelas de Tingimentos.</td>
+                </tr>
+                </tbody>
+            </table>
+            </div>
+            </div>
+
+            <div id="subaba-rotativos-regras">
+            <p>Como a coluna <strong>Preco da Malha (Informado e Contratipo)</strong> da tabela de rotativos e
+                construida. O ponto de partida e sempre a <strong>Tecnica</strong> escolhida na linha: cada tecnica
+                tem a sua regra. Na tabela, passe o mouse sobre o valor para ver a conta feita com os numeros da linha.</p>
+
+            <div class="regras-grade">
+                <div th:each="regra : ${regrasPrecoRotativo}" class="regra-cartao"
+                        th:classappend="${regra.definida} ? '' : ' regra-pendente'">
+                    <h3 class="grupo-tabela-titulo">
+                        <span th:text="${regra.tecnica}"></span>
+                        <span th:if="${regra.definida}" class="badge-ativo">Definida</span>
+                        <span th:unless="${regra.definida}" class="badge-inativo">A definir</span>
+                    </h3>
+                    <div th:each="cenario : ${regra.cenarios}" class="regra-cenario">
+                        <p class="regra-cenario-titulo" th:if="${#lists.size(regra.cenarios) > 1}" th:text="${cenario.titulo}"></p>
+                        <p class="regra-rotulo">Quando</p>
+                        <p th:text="${cenario.quando}"></p>
+                        <p class="regra-rotulo">Formula</p>
+                        <p class="regra-formula" th:text="${cenario.formula}"></p>
+                        <p class="regra-rotulo">Passo a passo</p>
+                        <ol class="regra-passos">
+                            <li th:each="passo : ${cenario.passos}" th:text="${passo}"></li>
+                        </ol>
+                        <p class="regra-rotulo">Exemplo</p>
+                        <p class="regra-formula" th:text="${cenario.exemplo}"></p>
+                        <p class="regra-rotulo">Se faltar</p>
+                        <p th:text="${cenario.seFaltar}"></p>
+                    </div>
+                    <p th:unless="${regra.definida}" style="color:var(--text-muted);">Regra ainda nao definida. Linhas
+                        com esta tecnica ficam sem Preco da Malha ("regra a definir") ate a regra ser especificada.</p>
+                </div>
+                <div class="regra-cartao regra-pendente">
+                    <h3 class="grupo-tabela-titulo"><span>Sem tecnica</span></h3>
+                    <p style="color:var(--text-muted);">Linhas sem Tecnica escolhida ficam sem Preco da Malha
+                        ("sem tecnica"). Escolha a tecnica na coluna Tecnica da tabela.</p>
+                </div>
+            </div>
+            </div>
+        </div>
+
+        <div id="aba-malhas">
+            <p>Fichas tecnicas agrupadas a partir da <a href="/tabela-geral">Tabela Geral</a>, uma malha por bloco.</p>
+
+            <p><a class="btn btn-secondary" th:href="@{/malhas/exportar(aba='malhas')}">Baixar como Excel</a></p>
+
+            <form method="post" th:action="@{/malhas/piscoffins/salvar}"
+                    style="display:flex; gap:8px; align-items:flex-end; margin-bottom:16px;">
+                <div class="form-group">
+                    <label for="piscoffins-valor">Piscoffins</label>
+                    <input type="text" inputmode="decimal" id="piscoffins-valor" name="valor" style="width:10em;"
+                            placeholder="0,9175"
+                            th:value="${piscoffins.valor != null} ? ${#strings.replace(piscoffins.valor.toPlainString(), '.', ',')} : null"/>
+                </div>
+                <button type="submit" class="btn btn-primary">Salvar</button>
+            </form>
+
+            <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                <tr>
+                    <th>Codigo</th>
+                    <th>Malha</th>
+                    <th>Composicao</th>
+                    <th>Rendimento</th>
+                    <th>Participacao do Fio</th>
+                    <th>Fio</th>
+                    <th>Custo do Fio</th>
+                    <th>Tecelagem</th>
+                    <th>Preco Malha Crua</th>
+                </tr>
+                </thead>
+                <tbody>
+                <th:block th:each="item, itemStat : ${malhas}">
+                    <tr th:classappend="${(item.corIndice % 2 == 0 ? 'bloco-par' : 'bloco-impar') + (linhaStat.first ? ' bloco-divisor' : '')}"
+                            th:each="linhaFio, linhaStat : ${item.fios}">
+                        <th:block th:if="${linhaStat.first}">
+                            <td th:text="${item.codigo}" th:rowspan="${maxLinhas}"></td>
+                            <td th:text="${item.nome}" th:rowspan="${maxLinhas}"></td>
+                            <td th:text="${item.composicao}" th:rowspan="${maxLinhas}"></td>
+                            <td th:text="${item.rendimento}" th:rowspan="${maxLinhas}"></td>
+                        </th:block>
+                        <td th:text="${linhaFio.participacao}"></td>
+                        <td th:text="${linhaFio.fio}"></td>
+                        <td class="text-right" th:if="${linhaFio.fio != null}"
+                                th:with="fioCadastrado=${fiosPorAbreviado.get(linhaFio.fio)}, custoFio=${fioCadastrado != null} ? ${fioCadastrado.custoContratipo} : null">
+                            <span class="com-formula"
+                                    th:title="${fioCadastrado != null} ? ${fioCadastrado.memoriaCustoContratipo} : 'Fio ' + ${linhaFio.fio} + ' não cadastrado na aba Fios.'"
+                                    th:text="'R$ ' + ${#numbers.formatDecimal(custoFio != null ? custoFio : 0, 1, 'POINT', 2, 'COMMA')}"></span>
+                        </td>
+                        <td th:if="${linhaFio.fio == null}"></td>
+                        <th:block th:if="${linhaStat.first}">
+                            <td th:rowspan="${maxLinhas}" class="text-right"
+                                    th:with="valorTecelagem=${tecelagemValorPorMalha.get(item.codigo)}">
+                                <span class="com-formula" th:title="${memoriaTecelagemPorMalha.get(item.codigo)}"
+                                        th:text="'R$ ' + ${#numbers.formatDecimal(valorTecelagem != null ? valorTecelagem : 0, 1, 'POINT', 2, 'COMMA')}"></span>
+                            </td>
+                            <td th:rowspan="${maxLinhas}" class="text-right"
+                                    th:with="precoMalhaCrua=${precoMalhaCruaPorMalha.get(item.codigo)}">
+                                <span class="com-formula" th:title="${memoriaPrecoMalhaCruaPorMalha.get(item.codigo)}"
+                                        th:text="'R$ ' + ${#numbers.formatDecimal(precoMalhaCrua != null ? precoMalhaCrua : 0, 1, 'POINT', 2, 'COMMA')}"></span>
+                            </td>
+                        </th:block>
+                    </tr>
+                </th:block>
+                </tbody>
+            </table>
+            </div>
+        </div>
+
+        <div id="aba-fios">
+            <p>Um fio abreviado por linha (como aparece na Tabela Geral). Preencha o codigo do ERP e o custo informado
+                para correlacionar cada abreviatura ao seu fio - Descricao e Custo Informado sao manuais por enquanto
+                (a integracao automatica com o ERP para fios ainda nao existe). Custo Contratipo e sempre calculado
+                (Custo Informado &times; 0,9175).</p>
+
+            <p><a class="btn btn-secondary" th:href="@{/malhas/exportar(aba='fios')}">Baixar como Excel</a></p>
+
+            <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                <tr>
+                    <th>Fio (abreviacao)</th>
+                    <th>Codigo (ERP)</th>
+                    <th>Descricao</th>
+                    <th>Custo Informado</th>
+                    <th>Custo Contratipo</th>
+                    <th>Acao</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="abrev, rowStat : ${fiosAbreviados}"
+                        th:with="fioExistente=${fiosPorAbreviado.get(abrev)}, formId='form-fio-' + ${rowStat.index},
+                                 cod=${fioExistente != null and fioExistente.codigo != null and #strings.length(fioExistente.codigo) == 15} ? ${fioExistente.codigo} : null">
+                    <td style="font-weight:600;">
+                        <span th:text="${abrev}"></span>
+                        <form th:id="${formId}" th:action="@{/malhas/fios/salvar}" method="post">
+                            <input type="hidden" name="nomeAbreviado" th:value="${abrev}"/>
+                        </form>
+                    </td>
+                    <td>
+                        <div class="codigo-fio-grupo">
+                            <input type="text" name="cod1" required pattern="[0-9A-Za-z]{1}" maxlength="1" style="width:2.2em;" title="1 caractere (letra ou numero)"
+                                    th:attr="form=${formId}" th:value="${cod != null} ? ${#strings.substring(cod, 0, 1)} : null"/>
+                            <input type="text" name="cod2" required pattern="[0-9A-Za-z]{5}" maxlength="5" style="width:5em;" title="5 caracteres (letras e/ou numeros)"
+                                    th:attr="form=${formId}" th:value="${cod != null} ? ${#strings.substring(cod, 1, 6)} : null"/>
+                            <input type="text" name="cod3" required pattern="[0-9A-Za-z]{3}" maxlength="3" style="width:3.5em;" title="3 caracteres (letras e/ou numeros)"
+                                    th:attr="form=${formId}" th:value="${cod != null} ? ${#strings.substring(cod, 6, 9)} : null"/>
+                            <input type="text" name="cod4" required pattern="[0-9A-Za-z]{6}" maxlength="6" style="width:6em;" title="6 caracteres (letras e/ou numeros)"
+                                    th:attr="form=${formId}" th:value="${cod != null} ? ${#strings.substring(cod, 9, 15)} : null"/>
+                        </div>
+                    </td>
+                    <td>
+                        <input type="text" name="descricao" style="width:12em;" th:attr="form=${formId}" th:value="${fioExistente} ? ${fioExistente.descricao} : null"/>
+                    </td>
+                    <td class="text-right">
+                        <div style="display:flex; align-items:center; gap:4px; justify-content:flex-end;">
+                            <span>R$</span>
+                            <input type="number" step="0.0001" name="custoInformado" style="width:8em;" th:attr="form=${formId}" th:value="${fioExistente} ? ${fioExistente.custoInformado} : null"/>
+                        </div>
+                    </td>
+                    <td class="text-right">
+                        <span th:if="${fioExistente != null and fioExistente.custoContratipo != null}" class="com-formula"
+                                th:title="${fioExistente.memoriaCustoContratipo}"
+                                th:text="'R$ ' + ${#numbers.formatDecimal(fioExistente.custoContratipo, 1, 'POINT', 2, 'COMMA')}"></span>
+                        <span th:if="${fioExistente == null or fioExistente.custoContratipo == null}" style="color:var(--text-muted);">-</span>
+                    </td>
+                    <td style="display:flex; align-items:center; gap:6px;">
+                        <span th:if="${fioExistente != null}" class="badge-ativo">Cadastrado</span>
+                        <button type="submit" class="btn btn-primary" th:attr="form=${formId}" th:text="${fioExistente != null} ? 'Atualizar' : 'Salvar'"></button>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(fiosAbreviados)}">
+                    <td colspan="6" style="color:var(--text-muted);">Nenhum fio encontrado nas malhas ainda.</td>
+                </tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+
+        <div id="aba-tecelagem">
+            <p>Custo de tecelagem por artigo/codigo/tear, com uma coluna de preco por fornecedor. Os
+                valores vem hoje de upload manual de planilha .xlsx ou .csv; futuramente virao direto do ERP.
+                Reenviar a mesma planilha atualiza os custos existentes em vez de duplicar linhas.</p>
+
+            <p><a class="btn btn-secondary" th:href="@{/malhas/exportar(aba='tecelagem')}">Baixar como Excel</a></p>
+
+            <form method="post" enctype="multipart/form-data" th:action="@{/malhas/tecelagem/importar}"
+                    style="display:flex; gap:8px; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap;">
+                <div class="form-group">
+                    <label for="tecelagem-arquivo">Planilha (.xlsx ou .csv)</label>
+                    <input type="file" id="tecelagem-arquivo" name="arquivo" accept=".xlsx,.csv" required/>
+                </div>
+                <button type="submit" class="btn btn-primary">Importar planilha</button>
+            </form>
+
+            <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                <tr>
+                    <th>Artigo</th>
+                    <th>Codigo</th>
+                    <th>Tear</th>
+                    <th th:text="${fornecedor1Header}"></th>
+                    <th th:text="${fornecedor2Header}"></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="t : ${tecelagens}">
+                    <td th:text="${t.artigo}"></td>
+                    <td th:text="${t.codigo}"></td>
+                    <td th:text="${t.tear}"></td>
+                    <td class="text-right">
+                        <span th:if="${t.custoFornecedor1 != null}" th:text="'R$ ' + ${#numbers.formatDecimal(t.custoFornecedor1, 1, 'POINT', 2, 'COMMA')}"></span>
+                        <span th:if="${t.custoFornecedor1 == null}" style="color:var(--text-muted);">-</span>
+                    </td>
+                    <td class="text-right">
+                        <span th:if="${t.custoFornecedor2 != null}" th:text="'R$ ' + ${#numbers.formatDecimal(t.custoFornecedor2, 1, 'POINT', 2, 'COMMA')}"></span>
+                        <span th:if="${t.custoFornecedor2 == null}" style="color:var(--text-muted);">-</span>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(tecelagens)}">
+                    <td colspan="5" style="color:var(--text-muted);">Nenhuma tecelagem cadastrada ainda.</td>
+                </tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    (function () {
+        var abaAtiva = /*[[${abaAtiva}]]*/ 'malhas';
+        var blocos = {
+            tingimentos: document.getElementById('aba-tingimentos'),
+            rotativos: document.getElementById('aba-rotativos'),
+            malhas: document.getElementById('aba-malhas'),
+            fios: document.getElementById('aba-fios'),
+            tecelagem: document.getElementById('aba-tecelagem')
+        };
+        var botoes = {
+            tingimentos: document.getElementById('aba-btn-tingimentos'),
+            rotativos: document.getElementById('aba-btn-rotativos'),
+            malhas: document.getElementById('aba-btn-malhas'),
+            fios: document.getElementById('aba-btn-fios'),
+            tecelagem: document.getElementById('aba-btn-tecelagem')
+        };
+
+        function selecionar(aba) {
+            Object.keys(blocos).forEach(function (chave) {
+                blocos[chave].hidden = chave !== aba;
+                botoes[chave].classList.toggle('ativo', chave === aba);
+            });
+        }
+
+        Object.keys(botoes).forEach(function (chave) {
+            botoes[chave].addEventListener('click', function () { selecionar(chave); });
+        });
+
+        selecionar(abaAtiva);
+    })();
+
+    /* Sub-abas da aba Rotativos: Tabela (rotativos importados), Banco de dados (preco base por tecido) e Regras de preco. */
+    (function () {
+        var subabaAtiva = /*[[${subabaRotativos}]]*/ 'tabela';
+        ['tabela', 'banco', 'regras'].forEach(function (chave) {
+            document.getElementById('subaba-btn-rotativos-' + chave).addEventListener('click', function () {
+                selecionar(chave);
+            });
+        });
+
+        function selecionar(subaba) {
+            ['tabela', 'banco', 'regras'].forEach(function (chave) {
+                document.getElementById('subaba-rotativos-' + chave).hidden = chave !== subaba;
+                document.getElementById('subaba-btn-rotativos-' + chave).classList.toggle('ativo', chave === subaba);
+            });
+        }
+
+        selecionar(subabaAtiva);
+    })();
+
+    /*
+     * Ordenacao de cada table.ordenavel (Rotativos e Banco de dados) por uma ou mais colunas, como
+     * o "Classificar" do Excel. Clique simples ordena so' por aquela coluna (asc -> desc -> asc...);
+     * Shift+clique adiciona a coluna como proximo nivel de desempate (asc -> desc -> remove o nivel).
+     * Compara em ordem alfanumerica natural (ex.: "T2" antes de "T10"); colunas em R$ ou numericas
+     * sao comparadas pelo valor. Celulas vazias ficam sempre no fim. Os niveis escolhidos ficam
+     * guardados na sessao do navegador (um por tabela), porque editar um campo recarrega a pagina.
+     */
+    Array.prototype.forEach.call(document.querySelectorAll('table.ordenavel'), function (tabela) {
+        // Chave pelo nome da tabela de precos quando houver - o id do bloco muda se entrar uma tabela nova antes.
+        var CHAVE = 'ordem-' + (tabela.getAttribute('data-chave') || tabela.id);
+        var cabecalhos = Array.prototype.slice.call(tabela.tHead.rows[0].cells);
+        var corpo = tabela.tBodies[0];
+        var linhas = Array.prototype.filter.call(corpo.rows, function (linha) {
+            return linha.cells.length === cabecalhos.length;
+        });
+        // Posicao original (ordem do Excel importado), usada como ultimo desempate e ao limpar.
+        linhas.forEach(function (linha, i) { linha.setAttribute('data-posicao', i); });
+        var niveis = [];
+
+        function valorCelula(celula) {
+            var select = celula.querySelector('select');
+            if (select) {
+                return select.value.trim();
+            }
+            var input = celula.querySelector('input:not([type=hidden])');
+            if (input) {
+                // input number usa ponto decimal ("12.5"); converte para o formato pt-BR que comoNumero espera.
+                return input.type === 'number' ? input.value.trim().replace('.', ',') : input.value.trim();
+            }
+            var texto = celula.textContent.trim();
+            return texto === '-' ? '' : texto;
+        }
+
+        function comoNumero(texto) {
+            var limpo = texto.replace(/^R\$\s*/, '');
+            if (!/^-?[\d.]+(,\d+)?$/.test(limpo)) {
+                return null;
+            }
+            return parseFloat(limpo.replace(/\./g, '').replace(',', '.'));
+        }
+
+        function comparar(a, b) {
+            if (a === '' || b === '') {
+                return a === b ? 0 : (a === '' ? 1 : -1);
+            }
+            var na = comoNumero(a), nb = comoNumero(b);
+            if (na !== null && nb !== null) {
+                return na - nb;
+            }
+            return a.localeCompare(b, 'pt-BR', { numeric: true, sensitivity: 'base' });
+        }
+
+        function aplicar() {
+            linhas.sort(function (l1, l2) {
+                for (var n = 0; n < niveis.length; n++) {
+                    var a = valorCelula(l1.cells[niveis[n].indice]), b = valorCelula(l2.cells[niveis[n].indice]);
+                    var resultado = comparar(a, b);
+                    // Vazios continuam no fim mesmo na ordem decrescente.
+                    if (niveis[n].ordem === 'desc' && a !== '' && b !== '') {
+                        resultado = -resultado;
+                    }
+                    if (resultado !== 0) {
+                        return resultado;
+                    }
+                }
+                return l1.getAttribute('data-posicao') - l2.getAttribute('data-posicao');
+            });
+            linhas.forEach(function (linha) { corpo.appendChild(linha); });
+            cabecalhos.forEach(function (th) {
+                th.removeAttribute('data-ordem');
+                th.removeAttribute('data-nivel');
+            });
+            niveis.forEach(function (nivel, n) {
+                cabecalhos[nivel.indice].setAttribute('data-ordem', nivel.ordem);
+                if (niveis.length > 1) {
+                    cabecalhos[nivel.indice].setAttribute('data-nivel', n + 1);
+                }
+            });
+            try {
+                sessionStorage.setItem(CHAVE, JSON.stringify(niveis));
+            } catch (e) { /* sem storage: so' nao lembra a ordem */ }
+        }
+
+        function nivelDa(indice) {
+            for (var n = 0; n < niveis.length; n++) {
+                if (niveis[n].indice === indice) {
+                    return n;
+                }
+            }
+            return -1;
+        }
+
+        cabecalhos.forEach(function (th, indice) {
+            th.title = 'Clique para ordenar por esta coluna; Shift+clique para adicionar como proximo nivel';
+            th.addEventListener('click', function (evento) {
+                var n = nivelDa(indice);
+                if (evento.shiftKey) {
+                    if (n === -1) {
+                        niveis.push({ indice: indice, ordem: 'asc' });
+                    } else if (niveis[n].ordem === 'asc') {
+                        niveis[n].ordem = 'desc';
+                    } else {
+                        niveis.splice(n, 1);
+                    }
+                } else {
+                    var ordem = (niveis.length === 1 && n === 0 && niveis[0].ordem === 'asc') ? 'desc' : 'asc';
+                    niveis = [{ indice: indice, ordem: ordem }];
+                }
+                aplicar();
+            });
+        });
+
+        var botaoLimpar = document.querySelector('[data-limpar-ordem="' + tabela.id + '"]');
+        if (botaoLimpar) {
+            botaoLimpar.addEventListener('click', function () {
+                niveis = [];
+                aplicar();
+            });
+        }
+
+        try {
+            var salvo = JSON.parse(sessionStorage.getItem(CHAVE));
+            if (Array.isArray(salvo)) {
+                niveis = salvo.filter(function (nivel) {
+                    return nivel && nivel.indice >= 0 && nivel.indice < cabecalhos.length;
+                }).map(function (nivel) {
+                    return { indice: nivel.indice, ordem: nivel.ordem === 'desc' ? 'desc' : 'asc' };
+                });
+                if (niveis.length) {
+                    aplicar();
+                }
+            }
+        } catch (e) { /* ignora ordem salva invalida */ }
+    });
+</script>
+</body>
+</html>

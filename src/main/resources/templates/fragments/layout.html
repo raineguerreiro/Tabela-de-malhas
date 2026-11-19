@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <th:block th:fragment="estilo">
+        <link rel="preconnect" href="https://fonts.googleapis.com"/>
+        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet"/>
+        <style>
+            :root {
+                --bg-main:       #f5f5f0;
+                --bg-card:       #ffffff;
+                --bg-sidebar:    #1a1a1a;
+
+                --accent:        #d4a843;
+                --accent-hover:  #c49a35;
+                --accent-light:  rgba(212, 168, 67, 0.08);
+                --accent-border: rgba(212, 168, 67, 0.2);
+
+                --text-primary:   #1a1a1a;
+                --text-secondary: #6b6b6b;
+                --text-muted:     #9a9a9a;
+
+                --border:       #e8e8e3;
+                --border-light: #f0f0eb;
+
+                --success: #2d8a4e;
+                --warning: #e6a817;
+                --danger:  #c9453e;
+                --info:    #3b7dd8;
+
+                --radius-sm: 6px;
+                --radius-md: 10px;
+                --radius-lg: 14px;
+
+                --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+                --shadow-md: 0 4px 12px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.08);
+                --shadow-lg: 0 8px 30px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
+            }
+
+            * { box-sizing: border-box; }
+
+            body {
+                font-family: 'DM Sans', sans-serif;
+                font-size: 12px;
+                color: var(--text-primary);
+                background: var(--bg-main);
+                display: flex;
+                min-height: 100vh;
+                margin: 0;
+            }
+
+            h1, h2, h3 { font-weight: 700; margin: 0 0 12px; }
+            h2 { font-size: 15px; border-bottom: 2px solid var(--accent); padding-bottom: 6px; }
+            p { color: var(--text-secondary); }
+            a { color: var(--text-primary); }
+
+            /* ---------- Sidebar + top bar ---------- */
+            .sidebar {
+                width: 220px;
+                min-width: 220px;
+                background: var(--bg-sidebar);
+                min-height: 100vh;
+                padding: 18px 12px;
+            }
+            .sidebar-brand {
+                color: #fff;
+                font-weight: 700;
+                font-size: 13px;
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
+                padding: 0 10px 16px;
+            }
+            .sidebar-link {
+                display: block;
+                padding: 9px 12px;
+                margin-bottom: 2px;
+                border-radius: 8px;
+                color: rgba(255,255,255,0.55);
+                font-size: 13px;
+                font-weight: 500;
+                text-decoration: none;
+            }
+            .sidebar-link:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); }
+            .sidebar-link.active { background: var(--accent); color: var(--bg-sidebar); font-weight: 600; }
+
+            .main-area { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+            .top-bar {
+                background: var(--bg-card);
+                border-bottom: 1px solid var(--border);
+                padding: 14px 24px;
+                font-size: 16px;
+                font-weight: 700;
+            }
+            .content { padding: 24px; }
+
+            /* ---------- Botoes ---------- */
+            .btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 5px 10px;
+                border: none;
+                border-radius: var(--radius-sm);
+                font-size: 11px;
+                font-weight: 500;
+                font-family: 'DM Sans', sans-serif;
+                cursor: pointer;
+                text-decoration: none;
+                transition: all 0.15s ease;
+            }
+            .btn-primary { background: #4a4a42; color: #fff; }
+            .btn-primary:hover { background: #5a5a52; transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+            .btn-secondary { background: #eee; color: #333; }
+            .btn-secondary:hover { background: #ddd; }
+            .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
+            .btn-ghost:hover { background: var(--bg-main); }
+            .btn-danger { background: var(--danger); color: #fff; }
+            .btn-danger:hover { background: #a83a34; }
+
+            .btn-toggle {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                padding: 4px 10px;
+                font-size: 11px;
+                font-weight: 600;
+                background: var(--bg-card);
+                border: 1px solid var(--border);
+                border-radius: var(--radius-md);
+                color: var(--text-muted);
+                cursor: pointer;
+                font-family: 'DM Sans', sans-serif;
+            }
+            .btn-toggle.ativo { background: #4a4a42; color: #fff; border-color: #4a4a42; }
+
+            /* ---------- Tabelas ---------- */
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                background: var(--bg-card);
+                box-shadow: var(--shadow-sm);
+                font-size: 11px;
+                margin-top: 1rem;
+            }
+            thead tr { background: #4a4a42; color: #fff; }
+            thead th {
+                padding: 6px 8px;
+                text-align: left;
+                font-size: 9px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                border: 1px solid #5a5a52;
+                white-space: nowrap;
+            }
+            tbody tr { border-bottom: 1px solid var(--border); }
+            tbody tr:hover { background: var(--accent-light); }
+            td {
+                padding: 5px 8px;
+                text-align: left;
+                border: 1px solid var(--border);
+                vertical-align: top;
+            }
+            td.text-right { text-align: right; }
+            .titulo-secao td { background: var(--bg-main); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); }
+
+            /* Alternancia sutil + linha divisora entre blocos (ex.: uma malha por bloco). */
+            .bloco-par td   { background: var(--bg-card); }
+            .bloco-impar td { background: #fafaf8; }
+            .bloco-divisor td { border-top: 2px solid var(--accent); }
+
+            /* ---------- Cards ---------- */
+            .content-card {
+                background: var(--bg-card);
+                border: 1px solid var(--border);
+                border-radius: var(--radius-md);
+                padding: 16px 20px 14px;
+                box-shadow: var(--shadow-sm);
+            }
+            .content-card-title {
+                font-size: 11px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.07em;
+                color: var(--text-secondary);
+                margin-bottom: 12px;
+                padding-bottom: 8px;
+                border-bottom: 2px solid var(--accent-border);
+            }
+
+            /* ---------- Chips ---------- */
+            .chip {
+                display: inline-flex; align-items: center; gap: 5px;
+                background: var(--accent-light); color: var(--text-primary);
+                border: 1px solid var(--accent-border);
+                border-radius: 20px;
+                padding: 3px 10px;
+                font-size: 11px; font-weight: 600;
+            }
+
+            /* ---------- Badges ---------- */
+            /* Valor calculado: passar o mouse mostra a formula com os numeros (atributo title). */
+            .com-formula { cursor: help; text-decoration: underline dotted; text-underline-offset: 2px; }
+            .badge-ativo   { background: var(--success); color: #fff; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+            .badge-inativo { background: #bbb;           color: #fff; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+            .badge-pill {
+                display: inline-block;
+                padding: 2px 7px;
+                border-radius: 4px;
+                font-size: 10px;
+                font-weight: 600;
+                letter-spacing: 0.3px;
+                text-transform: uppercase;
+                white-space: nowrap;
+            }
+            .badge-manual   { background: rgba(59,125,216,0.12); color: var(--info); }
+            .badge-erpsync  { background: rgba(45,138,78,0.12);  color: var(--success); }
+
+            /* ---------- Formularios ---------- */
+            form { margin-top: 1rem; }
+            .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; max-width: 640px; }
+            .form-group { display: flex; flex-direction: column; gap: 3px; }
+            .form-group.full-width { grid-column: 1 / -1; }
+
+            label {
+                font-size: 10px;
+                font-weight: 600;
+                color: var(--text-secondary);
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+            }
+            label.checkbox-label { display: flex; align-items: center; gap: 6px; text-transform: none; font-size: 12px; }
+
+            input[type=text], input[type=number], input[type=date], select, textarea {
+                padding: 6px 8px;
+                border: 1px solid var(--border);
+                border-radius: var(--radius-sm);
+                font-size: 12px;
+                background: var(--bg-main);
+                font-family: 'DM Sans', sans-serif;
+                width: 100%;
+            }
+            input:focus, select:focus, textarea:focus {
+                outline: none;
+                border-color: var(--accent);
+                box-shadow: 0 0 0 3px var(--accent-light);
+            }
+
+            .form-actions { display: flex; justify-content: flex-start; gap: 8px; margin-top: 18px; }
+        </style>
+        <script>
+            /*
+             * Botoes "Baixar como Excel" genericos: <button data-exportar-excel="seletor das tabelas"
+             * data-arquivo="nome">. Le as tabelas do jeito que estao na tela - na ordem exibida (inclusive
+             * a ordenacao escolhida), so' as colunas visiveis - e manda para /exportar-excel, que devolve o
+             * .xlsx. Varias tabelas no seletor (ex.: um bloco por tabela de precos) viram uma planilha so'.
+             * Colunas com <th data-exportar="nao"> (ex.: botoes de acao) ficam de fora.
+             */
+            document.addEventListener('click', function (evento) {
+                var botao = evento.target.closest('[data-exportar-excel]');
+                if (!botao) {
+                    return;
+                }
+                var tabelas = Array.prototype.slice.call(document.querySelectorAll(botao.getAttribute('data-exportar-excel')));
+                if (!tabelas.length) {
+                    return;
+                }
+
+                function visivel(celula) {
+                    return getComputedStyle(celula).display !== 'none';
+                }
+
+                function textoCelula(celula) {
+                    var campos = celula.querySelectorAll('select, input:not([type=hidden])');
+                    if (campos.length) {
+                        return Array.prototype.map.call(campos, function (campo) {
+                            if (campo.tagName === 'SELECT') {
+                                return campo.selectedIndex >= 0 ? campo.options[campo.selectedIndex].text.trim() : '';
+                            }
+                            // input number usa ponto decimal; o servidor le no formato pt-BR.
+                            return campo.type === 'number' ? campo.value.trim().replace('.', ',') : campo.value.trim();
+                        }).join('').replace(/^-$/, '');
+                    }
+                    var texto = celula.textContent.replace(/\s+/g, ' ').trim();
+                    return texto === '-' ? '' : texto;
+                }
+
+                var titulos = Array.prototype.slice.call(tabelas[0].tHead.rows[0].cells);
+                var colunas = [];
+                titulos.forEach(function (th, i) {
+                    if (th.getAttribute('data-exportar') !== 'nao' && visivel(th)) {
+                        colunas.push(i);
+                    }
+                });
+
+                var linhas = [];
+                tabelas.forEach(function (tabela) {
+                    Array.prototype.forEach.call(tabela.tBodies, function (corpo) {
+                        Array.prototype.forEach.call(corpo.rows, function (tr) {
+                            if (tr.cells.length !== titulos.length) {
+                                // Linha de titulo de secao (Tabela Geral) entra com o texto na 1a coluna;
+                                // mensagens como "Nenhum ... cadastrado" ficam de fora.
+                                if (tr.classList.contains('titulo-secao')) {
+                                    linhas.push([{ texto: textoCelula(tr.cells[0]), numerica: false }]);
+                                }
+                                return;
+                            }
+                            linhas.push(colunas.map(function (i) {
+                                var td = tr.cells[i];
+                                // data-valor: valor bruto com ponto decimal (ex.: BigDecimal sem formatacao na tela).
+                                var bruto = td.getAttribute('data-valor');
+                                if (bruto !== null) {
+                                    return { texto: bruto.replace('.', ','), numerica: true };
+                                }
+                                return { texto: textoCelula(td), numerica: td.classList.contains('text-right') };
+                            }));
+                        });
+                    });
+                });
+
+                var arquivo = botao.getAttribute('data-arquivo') || 'tabela';
+                botao.disabled = true;
+                fetch('/exportar-excel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        arquivo: arquivo,
+                        cabecalhos: colunas.map(function (i) { return titulos[i].textContent.trim(); }),
+                        linhas: linhas
+                    })
+                }).then(function (resposta) {
+                    if (!resposta.ok) {
+                        throw new Error('HTTP ' + resposta.status);
+                    }
+                    return resposta.blob();
+                }).then(function (blob) {
+                    var link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = arquivo + '.xlsx';
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    setTimeout(function () { URL.revokeObjectURL(link.href); }, 1000);
+                }).catch(function (erro) {
+                    alert('Nao foi possivel gerar o Excel: ' + erro.message);
+                }).finally(function () {
+                    botao.disabled = false;
+                });
+            });
+        </script>
+    </th:block>
+</head>
+<body>
+<div class="sidebar" th:fragment="sidebar(active)">
+    <div class="sidebar-brand">Tabela de Malhas</div>
+    <a class="sidebar-link" th:classappend="${active == 'malhas'} ? 'active' : ''" href="/malhas">Malhas</a>
+    <a class="sidebar-link" th:classappend="${active == 'fornecedores'} ? 'active' : ''" href="/fornecedores">Fornecedores</a>
+    <a class="sidebar-link" th:classappend="${active == 'servicos'} ? 'active' : ''" href="/servicos">Servicos</a>
+    <a class="sidebar-link" th:classappend="${active == 'custos'} ? 'active' : ''" href="/custos/novo">Lancar Custo</a>
+    <a class="sidebar-link" th:classappend="${active == 'erp'} ? 'active' : ''" href="/erp/consultas">Integracao ERP</a>
+    <a class="sidebar-link" th:classappend="${active == 'tabelageral'} ? 'active' : ''" href="/tabela-geral">Tabela Geral</a>
+</div>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Servicos</title>
+    <meta charset="UTF-8"/>
+    <th:block th:replace="~{fragments/layout :: estilo}"></th:block>
+</head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar('servicos')}"></div>
+<div class="main-area">
+    <div class="top-bar">Servicos</div>
+    <div class="content">
+        <p><a class="btn btn-secondary" href="/servicos/novo">+ Novo servico</a></p>
+
+        <button type="button" class="btn btn-secondary" data-exportar-excel="#tabela-servicos" data-arquivo="servicos">Baixar como Excel</button>
+        <table id="tabela-servicos">
+            <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Ordem no fluxo</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="s : ${servicos}">
+                <td><a th:href="@{'/servicos/' + ${s.id} + '/editar'}" th:text="${s.nome}"></a></td>
+                <td class="text-right" th:text="${s.ordemFluxo}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

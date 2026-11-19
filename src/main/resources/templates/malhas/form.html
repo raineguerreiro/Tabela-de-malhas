@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Malha</title>
+    <meta charset="UTF-8"/>
+    <th:block th:replace="~{fragments/layout :: estilo}"></th:block>
+</head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar('malhas')}"></div>
+<div class="main-area">
+    <div class="top-bar" th:text="${malha.id} != null ? 'Editar malha' : 'Nova malha'"></div>
+    <div class="content">
+        <form th:action="@{/malhas/salvar}" th:object="${malha}" method="post">
+            <input type="hidden" th:field="*{id}"/>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Codigo</label>
+                    <input type="text" th:field="*{codigo}" required/>
+                </div>
+
+                <div class="form-group">
+                    <label>Nome</label>
+                    <input type="text" th:field="*{nome}" required/>
+                </div>
+
+                <div class="form-group">
+                    <label>Composicao do fio</label>
+                    <input type="text" th:field="*{composicaoFio}" placeholder="Ex.: 100% Algodao"/>
+                </div>
+
+                <div class="form-group">
+                    <label>Gramatura (g/m2)</label>
+                    <input type="number" step="0.01" th:field="*{gramatura}"/>
+                </div>
+
+                <div class="form-group">
+                    <label>Largura (cm)</label>
+                    <input type="number" step="0.01" th:field="*{largura}"/>
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo de malha/ponto</label>
+                    <input type="text" th:field="*{tipoPonto}" placeholder="Ex.: Jersey, Ribana, Moletom"/>
+                </div>
+
+                <div class="form-group">
+                    <label>Cor/Estampa</label>
+                    <input type="text" th:field="*{corEstampa}"/>
+                </div>
+
+                <div class="form-group full-width">
+                    <label>Observacoes</label>
+                    <textarea th:field="*{observacoes}"></textarea>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>
